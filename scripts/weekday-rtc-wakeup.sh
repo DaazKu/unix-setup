@@ -4,7 +4,7 @@
 # Does not overwrite alarms set in the future so that if the cron runs past midnight 
 # it won't overwrite "today's" cron.
 #
-# 10 */1 * * * $PATH_TO_SCRIPT/weekday-rtc-wakeup.sh
+# 10 */1 * * * $PATH_TO_SCRIPT/weekday-rtc-wakeup.sh "09:00"
 #
 
 if [[ $(id -u) != 0 ]]; then
