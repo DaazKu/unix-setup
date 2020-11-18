@@ -1,0 +1,12 @@
+// Settings in here override those in "Default/Preferences.sublime-settings",
+// and are overridden in turn by syntax-specific settings.
+{
+    // Set to true to insert spaces when tab is pressed
+    "translate_tabs_to_spaces": true,
+    "ensure_newline_at_eof_on_save": true,
+    // Set to true to close windows as soon as the last file is closed, unless
+    // there's a folder open within the window.
+    // On Mac, this value is overridden in the platform specific settings, so
+    // you'll need to place this line in your user settings to override it.
+    "close_windows_when_empty": true,
+}
