@@ -1,0 +1,44 @@
+#!/usr/bin/env python3
+import os
+
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+
+os.system('sudo chown root:$(whoami) /opt')
+os.system('sudo chmod 0775 /opt')
+
+"""
+Handle $HOME
+- Create directory structure its missing
+- Create symlinks if missing
+"""
+HOME_SRC_DIR = SCRIPT_DIR+"/$HOME"
+
+for root, dirs, files in os.walk(HOME_SRC_DIR):
+    for directory in dirs:
+        directory_src = root+"/"+directory
+        directory_dst = os.path.expanduser("~"+(root.replace(HOME_SRC_DIR, ""))+"/"+directory)
+
+        src_stat = os.stat(directory_src)
+
+        if not os.path.exists(directory_dst):
+            print("Creating: "+directory_dst+" mode->"+oct(src_stat.st_mode))
+            os.mkdir(directory_dst, mode=src_stat.st_mode)
+
+    for file in files:
+        file_src = root+"/"+file
+        file_dst = os.path.expanduser("~"+(root.replace(HOME_SRC_DIR, ""))+"/"+file)
+
+        if not os.path.exists(file_dst):
+            print("Symlinking: "+file_src+" to "+file_dst)
+            os.symlink(file_src, file_dst)
+
+"""
+Handle other stuff
+"""
+symlinks = [
+    'opt/scripts'
+]
+for symlink in symlinks:
+    if not os.path.exists("/"+symlink):
+        print("Symlinking: " + file_src + " to " + file_dst)
+        os.symlink(SCRIPT_DIR+"/"+symlink, "/"+symlink)
