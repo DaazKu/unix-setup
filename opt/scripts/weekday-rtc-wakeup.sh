@@ -4,15 +4,16 @@
 # Does not overwrite alarms set in the future so that if the cron runs past midnight 
 # it won't overwrite "today's" cron.
 #
-# 10 */1 * * * $PATH_TO_SCRIPT/weekday-rtc-wakeup.sh "09:00"
+# Example:
+# 10 * * * * /opt/scripts/weekday-rtc-wakeup.sh "09:00" >/dev/null
 #
 
 if [[ $(id -u) != 0 ]]; then
-	echo "You need to run this with sudo power"
+	echo "You need to run this with sudo power" >&2
 	exit 1;
 fi
 if [[ $# -eq 0 ]]; then
-    echo "Usage: $0 {24_HOURS_TIME_FORMAT}"
+    echo "Usage: $0 {24_HOURS_TIME_FORMAT}" >&2
     exit 1;
 fi
 
@@ -28,14 +29,14 @@ if [[ ! -z $current_alarm && $current_alarm -gt $current_time ]]; then
 fi
 
 weekday=$(date +%u)
-if [[ $weekday == 6 || $weekday == 7 ]]; then
+if [[ $weekday == 5 || $weekday == 6 ]]; then
 	next_weekday="Monday"
 else
 	next_weekday="Tomorrow"
 fi
 
 # Only set the alarm (-m no) using localtime (-l)
-rtcwake -m no -l -t $(date +%s -d "$next_weekday $1") >/dev/null
+/usr/sbin/rtcwake -m no -l -t $(date +%s -d "$next_weekday $1") >/dev/null
 echo "Alarm set for $next_weekday $1"
 
 exit 0;
