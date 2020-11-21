@@ -1,0 +1,14 @@
+source $SSHHOME/.sshrc.d/.sharedrc
+
+export TERM=screen-256color
+export PS1="[\u@\h \W]\$ "
+
+screenrc() {
+    local SSHHOME_ORIGINAL=$SSHHOME
+    local SSHHOME=$(mktemp -d -t $(echo $SSHHOME_ORIGINAL | cut -f3 -d'/').screen.XXXX)
+    local SSHRCCLEANUP=$SSHHOME
+
+    cp -r $SSHHOME_ORIGINAL/. $SSHHOME
+
+    screen -c $SSHHOME/.sshrc.d/.screenrc
+}

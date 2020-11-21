@@ -1,0 +1,2 @@
+# Propagate sshrc setup to screen
+screen bash -c "trap 'rm -rf $SSHRCCLEANUP; exit' 0; bash --rcfile $SSHHOME/sshrc.bashrc"
