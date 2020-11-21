@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+#
+# Allow to execute a script that sets some instructions to run before and after
+# executing ssh. Prime example would be to change tmux color for specific hosts.
+# See .ssh/config.d/tmux_color.sh for an example.
+#
+export SSH_WRAPPER_SSH_CONFIG=$(/usr/bin/ssh -G "$@")
+SSH_WRAPPER_SCRIPT=$(grep -Po 'setenv SSH_WRAPPER_SCRIPT=\K.+' <<< "$SSH_WRAPPER_SSH_CONFIG")
+
+if [[ -f ~/.ssh/config.d/${SSH_WRAPPER_SCRIPT%%[[:space:]]*} ]]; then
+    source ~/.ssh/config.d/$SSH_WRAPPER_SCRIPT
+fi
+unset SSH_WRAPPER_SSH_CONFIG;
+
+if [[ ! -z $SSH_WRAPPER_PRE ]]; then
+    eval $SSH_WRAPPER_PRE
+    unset SSH_WRAPPER_PRE;
+fi
+
+/usr/bin/ssh "$@";
+
+if [[ ! -z $SSH_WRAPPER_POST ]]; then
+    eval $SSH_WRAPPER_POST
+    unset SSH_WRAPPER_POST;
+fi
