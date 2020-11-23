@@ -3,7 +3,10 @@ export ZSH="$HOME/.oh-my-zsh"
 
 ZSH_THEME_TERM_TITLE_TYPE=xterm
 ZSH_THEME="robbyrussell"
-ZSH_TMUX_AUTOSTART=true
+
+if [[ ! -z $GNOME_TERMINAL_SCREEN ]]; then
+    ZSH_TMUX_AUTOSTART=true
+fi
 
 plugins=(git tmux)
 
@@ -13,6 +16,9 @@ function omz_termsupport_precmd {
   local TERM=xterm # Fuck you I want my window title to change even in tmux!
   title "%n %4~ $h"
 }
+
+# Tell zsh that sshrc should have the same autocompletion than ssh.
+compdef sshrc=ssh
 
 # Get rid of that annoying paste issue when I do CTRL+V before CTRL+SHIFT+V by mistake
 bindkey -r "^V"
