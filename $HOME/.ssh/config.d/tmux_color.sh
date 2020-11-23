@@ -7,12 +7,16 @@
 # and revert the color to the default when disconnecting.
 #
 
-export SSH_WRAPPER_PRE=$(cat <<EOF
+if [[ $TERM == tmux-* ]]; then
+
+  export SSH_WRAPPER_PRE=$(cat <<EOF
 tmux select-pane -P bg=$1;
 EOF
-)
+  )
 
-export SSH_WRAPPER_POST=$(cat <<EOF
+  export SSH_WRAPPER_POST=$(cat <<EOF
 tmux select-pane -P bg=default;
 EOF
-)
+  )
+
+fi
