@@ -1,6 +1,11 @@
 source $SSHHOME/.sshrc.d/.sharedrc
 
-export TERM=screen-256color
+# Add extra stuff that should not be pushed to unix-setup
+if [[ -f $SSHHOME/.sshrc.d/.sharedrc.extra ]]; then
+  source $SSHHOME/.sshrc.d/.sharedrc.extra
+fi
+
+export TERM=xterm-256color
 export PS1="[\u@\h \W]\$ "
 
 screenrc() {

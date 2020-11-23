@@ -4,6 +4,9 @@ export ZSH="$HOME/.oh-my-zsh"
 ZSH_THEME_TERM_TITLE_TYPE=xterm
 ZSH_THEME="robbyrussell"
 
+# Do not automatically reconnect to previous session
+ZSH_TMUX_AUTOCONNECT=false
+# Launch tmux when opening Gnome Terminal
 if [[ ! -z $GNOME_TERMINAL_SCREEN ]]; then
     ZSH_TMUX_AUTOSTART=true
 fi
@@ -32,12 +35,14 @@ if [[ -d ./venv ]]; then
     export VIRTUAL_ENV_DISABLE_PROMPT=0
 fi
 
-# Adding personalized settings
+# Adds stuff locally and to sshrc.
 if [[ -f ~/.sharedrc ]]; then
   source ~/.sharedrc
 fi
 
-# Add extra stuff that should be pushed to unix-setup
-if [[ -f ~/.zshrc.extra ]]; then
-  source ~/.zshrc.extra
-fi
+# Add extra stuff that should not be pushed to unix-setup
+setopt nullglob
+for rc in ~/.zshrc.d/*
+do
+    source $rc
+done
