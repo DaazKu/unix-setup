@@ -3,9 +3,17 @@ import os
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
-os.system('sudo chown root:$(whoami) /opt')
-os.system('sudo chmod 0775 /opt')
+# Install required packages
+print("#########################")
+print("Install required packages")
+print("#########################")
+os.system('''
+    sudo apt-get install -y xclip
+''')
 
+print("#########################")
+print("Setup $HOME && stuff")
+print("#########################")
 """
 Handle $HOME
 - Create directory structure its missing
@@ -35,6 +43,9 @@ for root, dirs, files in os.walk(HOME_SRC_DIR):
 """
 Handle other stuff
 """
+os.system('sudo chown root:$(whoami) /opt')
+os.system('sudo chmod 0775 /opt')
+
 symlinks = [
     'opt/scripts'
 ]
