@@ -1,0 +1,8 @@
+[include]
+    path = ~/.gitconfig_user
+[commit]
+	gpgsign = true
+[alias]
+	logs = log --show-signature
+[core]
+	editor = subl -wn

@@ -53,3 +53,9 @@ for symlink in symlinks:
     if not os.path.exists("/"+symlink):
         print("Symlinking: " + file_src + " to " + file_dst)
         os.symlink(SCRIPT_DIR+"/"+symlink, "/"+symlink)
+
+"""
+Sanity checks
+"""
+if not os.path.exists(os.path.expanduser("~/.gitconfig_user")):
+    print("Do not forget that you have to configure ~/.gitconfig_user")
