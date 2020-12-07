@@ -4,5 +4,9 @@
 	gpgsign = true
 [alias]
 	logs = log --show-signature
+	# Pull current branch
+	pullc = !git pull origin $(git branch --show-current)
+	# Cleanup merged branches
+	cb = !git branch --merged | grep -Pv '(^\\*|master|main)' | xargs -r git branch -d
 [core]
 	editor = subl -wn
