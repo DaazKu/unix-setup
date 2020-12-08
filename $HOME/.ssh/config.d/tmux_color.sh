@@ -9,13 +9,14 @@
 
 if [[ $TERM == tmux-* ]]; then
 
+  # Change the current pane color. $TMUX_PANE tells us what's the current pane_id in this context.
   export SSH_WRAPPER_PRE=$(cat <<EOF
-tmux select-pane -P bg=$1;
+tmux select-pane -t$TMUX_PANE -P bg=$1;
 EOF
   )
 
   export SSH_WRAPPER_POST=$(cat <<EOF
-tmux select-pane -P bg=default;
+tmux select-pane -t$TMUX_PANE -P bg=default;
 EOF
   )
 
