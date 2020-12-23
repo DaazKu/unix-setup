@@ -8,5 +8,7 @@
 	pullc = !git pull origin $(git branch --show-current)
 	# Cleanup merged branches
 	cb = !git branch --merged | grep -Pv '(^\\*|master|main)' | xargs -r git branch -d
+	# Push and set upstream to origin
+	pushsu = !git push --set-upstream origin $(git branch --show-current)
 [core]
 	editor = subl -wn
