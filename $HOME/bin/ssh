@@ -17,7 +17,8 @@ if [[ ! -z $SSH_WRAPPER_PRE ]]; then
     unset SSH_WRAPPER_PRE;
 fi
 
-/usr/bin/ssh "$@";
+# Make sure we're using a widely supported term remotely
+TERM=xterm /usr/bin/ssh "$@";
 
 if [[ ! -z $SSH_WRAPPER_POST ]]; then
     eval $SSH_WRAPPER_POST
