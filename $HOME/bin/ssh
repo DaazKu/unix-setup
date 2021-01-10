@@ -5,6 +5,12 @@
 # See .ssh/config.d/tmux_color.sh for an example.
 #
 export SSH_WRAPPER_SSH_CONFIG=$(/usr/bin/ssh -G "$@")
+
+# Return early bause ssh has been called incorrectly and usage is being shown
+if [[ -z $SSH_WRAPPER_SSH_CONFIG ]]; then
+  exit 1;
+fi
+
 SSH_WRAPPER_SCRIPT=$(grep -Po 'setenv SSH_WRAPPER_SCRIPT=\K.+' <<< "$SSH_WRAPPER_SSH_CONFIG")
 
 if [[ -f ~/.ssh/config.d/${SSH_WRAPPER_SCRIPT%%[[:space:]]*} ]]; then
