@@ -2,6 +2,7 @@
 
 hosts=""
 ssh_options=""
+ssh_command="ssh"
 tmux_name="cssh"
 
 usage() {
@@ -14,6 +15,8 @@ usage() {
     echo "  -c                  Use the current tmux session and just spawn a new window instead" >&2
     echo "  -n <name>           Name of the tmux session or window (default: cssh)" >&2
     echo "  -o <ssh args>       Additional SSH arguments" >&2
+    echo "  -r                  Use sshrc instead of ssh" >&2
+    echo "  -w                  Use 'current' window" >&2
 }
 
 while [ $# -ne 0 ]; do
@@ -36,6 +39,13 @@ while [ $# -ne 0 ]; do
                 exit 2
             fi
             ssh_options="$1"; shift
+            ;;
+        -r)
+            ssh_command="sshrc"; shift
+            ;;
+        -w)
+            tmux_attach_current_session="true";
+            tmux_attach_current_window="true"; shift
             ;;
         -h)
             usage
@@ -62,6 +72,7 @@ tmux_session="${tmux_name}-${n}"
 
 if [ -n "${tmux_attach_current_session}" ]; then
     tmux_session=$(tmux display-message -p '#S')
+    tmux_window_number=$(tmux display-message -p '#I')
     n=0; while tmux list-windows -F "#W" | grep -q "${tmux_name}-${n}" 2>/dev/null; do n=$(($n + 1)); done
     tmux_window="${tmux_name}-${n}"
     tmux_window_options="-n ${tmux_window}"
@@ -85,11 +96,11 @@ fi
 # Open a new session and split into new panes for each SSH session
 for host in ${hosts}; do
     if ! tmux has-session -t "${tmux_session}" 2>/dev/null; then
-        tmux new-session -s "${tmux_session}" -d "ssh ${ssh_options} ${host}"
+        tmux new-session -s "${tmux_session}" -d "${ssh_command} ${ssh_options} ${host}"
     elif [ -n "${tmux_attach_current_session}" ] && ! tmux list-windows -F "#W" | grep -q "${tmux_window}" >/dev/null; then
-        tmux new-window ${tmux_window_options} "ssh ${ssh_options} ${host}"
+        tmux new-window ${tmux_window_options} "${ssh_command} ${ssh_options} ${host}"
     else
-        tmux split-window -t "${tmux_session}" -t ${tmux_window} -d "ssh ${ssh_options} ${host}"
+        tmux split-window -t "${tmux_session}" -t ${tmux_window} -d "${ssh_command} ${ssh_options} ${host}"
         # We have to reset the layout after each new pane otherwise the panes
         # quickly become too small to spawn any more
         tmux select-layout -t "${tmux_session}" tiled
@@ -109,6 +120,12 @@ if [ -n "${TMUX}" ]; then
 else
     # We are NOT in a tmux, attach to the new session
     tmux attach-session -t "${tmux_session}"
+fi
+
+if [ -n "${tmux_attach_current_window}" ]; then
+    tmux_new_window_number=$(tmux display-message -p '#I')
+    tmux swap-window -s ${tmux_new_window_number} -t ${tmux_window_number}
+    tmux kill-window -t ${tmux_new_window_number}
 fi
 
 exit 0
