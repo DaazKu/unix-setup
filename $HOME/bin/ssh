@@ -1,4 +1,14 @@
 #!/usr/bin/env bash
+set -euo pipefail
+
+function cleanup() {
+  if [[ ! -z ${SSH_WRAPPER_POST-} ]]; then
+      eval ${SSH_WRAPPER_POST}
+      unset SSH_WRAPPER_POST;
+  fi
+}
+trap cleanup EXIT
+
 #
 # Allow to execute a script that sets some instructions to run before and after
 # executing ssh. Prime example would be to change tmux color for specific hosts.
@@ -7,26 +17,21 @@
 export SSH_WRAPPER_SSH_CONFIG=$(/usr/bin/ssh -G "$@")
 
 # Return early bause ssh has been called incorrectly and usage is being shown
-if [[ -z $SSH_WRAPPER_SSH_CONFIG ]]; then
+if [[ -z ${SSH_WRAPPER_SSH_CONFIG} ]]; then
   exit 1;
 fi
 
-SSH_WRAPPER_SCRIPT=$(grep -Po 'setenv SSH_WRAPPER_SCRIPT=\K.+' <<< "$SSH_WRAPPER_SSH_CONFIG")
+SSH_WRAPPER_SCRIPT=$(grep -Po 'setenv SSH_WRAPPER_SCRIPT=\K.+' <<< "${SSH_WRAPPER_SSH_CONFIG}" || echo '')
 
 if [[ -f ~/.ssh/config.d/${SSH_WRAPPER_SCRIPT%%[[:space:]]*} ]]; then
-    source ~/.ssh/config.d/$SSH_WRAPPER_SCRIPT
+    source ~/.ssh/config.d/${SSH_WRAPPER_SCRIPT}
 fi
 unset SSH_WRAPPER_SSH_CONFIG;
 
-if [[ ! -z $SSH_WRAPPER_PRE ]]; then
-    eval $SSH_WRAPPER_PRE
+if [[ ! -z ${SSH_WRAPPER_PRE-} ]]; then
+    eval ${SSH_WRAPPER_PRE}
     unset SSH_WRAPPER_PRE;
 fi
 
 # Make sure we're using a widely supported term remotely
 TERM=xterm /usr/bin/ssh "$@";
-
-if [[ ! -z $SSH_WRAPPER_POST ]]; then
-    eval $SSH_WRAPPER_POST
-    unset SSH_WRAPPER_POST;
-fi
