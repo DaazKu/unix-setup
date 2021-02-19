@@ -17,3 +17,7 @@ screenrc() {
 
     screen -c $SSHHOME/.sshrc.d/.screenrc
 }
+
+surc() {
+  sudo su -c "export SSHHOME=${SSHHOME}; bash --rcfile ${SSHHOME}/sshrc.bashrc" "$@"
+}

@@ -7,3 +7,12 @@ xterm*|rxvt*)
 *)
     ;;
 esac
+
+beep_when_done() {
+  echo "Press [CTRL+C] to acknowledge"
+  while true
+  do
+    echo -en "\007"
+    sleep 0.2
+  done
+}
