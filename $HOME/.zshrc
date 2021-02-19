@@ -1,6 +1,8 @@
 export PATH="$HOME/bin:$PATH"
 export ZSH="$HOME/.oh-my-zsh"
 
+export EDITOR="subl_new_window"
+
 ZSH_THEME="robbyrussell"
 
 plugins=(git tmux)
