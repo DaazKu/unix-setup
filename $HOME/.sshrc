@@ -18,6 +18,14 @@ screenrc() {
     screen -c $SSHHOME/.sshrc.d/.screenrc
 }
 
-surc() {
-  sudo su -c "export SSHHOME=${SSHHOME}; bash --rcfile ${SSHHOME}/sshrc.bashrc" "$@"
+surc () {
+    local LOGIN=""
+    [ "$1" = "-" ] && LOGIN='-i' && shift
+
+    local USER="$1"
+    [ -z "${USER}" ] && USER="root"
+
+    chmod +x "${SSHHOME}" 2>/dev/null
+
+    sudo ${LOGIN} -u "${USER}" SSHHOME="${SSHHOME}" "${SSHHOME}/bashsshrc"
 }
