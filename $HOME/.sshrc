@@ -2,21 +2,35 @@ source $SSHHOME/.sshrc.d/.sharedrc
 
 # Add extra stuff that should not be pushed to unix-setup
 if [[ -f $SSHHOME/.sshrc.d/.sharedrc.extra ]]; then
-  source $SSHHOME/.sshrc.d/.sharedrc.extra
+    source $SSHHOME/.sshrc.d/.sharedrc.extra
 fi
 
+# Propagate SSHRC to other stuff like tmux/screen and anything else that will work with $SHELL.
+#export SHELL=${SSHHOME}/bashsshrc
 export TERM=xterm-256color
 export PS1="[\u@\h \W]\$ "
 
-screenrc() {
-    local SSHHOME_ORIGINAL=$SSHHOME
-    local SSHHOME=$(mktemp -d -t $(echo $SSHHOME_ORIGINAL | cut -f3 -d'/').screen.XXXX)
-    local SSHRCCLEANUP=$SSHHOME
+#tmuxrc() {
+#    tmux new-session -s "alexandre.chouinard.tmuxrc" "bash --rcfile '${SSHHOME}/bashsshrc'"
+#}
 
-    cp -r $SSHHOME_ORIGINAL/. $SSHHOME
+tmuxrc () {
+    local TMUXDIR=/tmp/alexandre.chouinard.tmuxserver
+    if ! [ -d "${TMUXDIR}" ]; then
+        rm -rf "${TMUXDIR}"
+        mkdir -m 755 -p "${TMUXDIR}"
+    fi
+    rm -rf "${TMUXDIR}/.sshrc.d"
+    cp -r "${SSHHOME}/." "${TMUXDIR}"
 
-    screen -c $SSHHOME/.sshrc.d/.screenrc
+    SSHHOME="${TMUXDIR}" \
+    SHELL="${TMUXDIR}/bashsshrc" \
+    /usr/bin/tmux \
+        -f "${TMUXDIR}/.sshrc.d/.tmux.conf" \
+        -S "${TMUXDIR}/tmuxserver" \
+        "$@"
 }
+
 
 surc () {
     local LOGIN=""
@@ -25,7 +39,7 @@ surc () {
     local USER="$1"
     [ -z "${USER}" ] && USER="root"
 
-    chmod +x "${SSHHOME}" 2>/dev/null
+    chmod -R +rx "${SSHHOME}"
 
     sudo ${LOGIN} -u "${USER}" SSHHOME="${SSHHOME}" "${SSHHOME}/bashsshrc"
 }
