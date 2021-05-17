@@ -9,7 +9,8 @@ print("Install required packages")
 print("#########################")
 os.system('''
     sudo apt-get install -y \
-        xclip
+        xclip \
+        xdotool
 ''')
 
 print("#########################")

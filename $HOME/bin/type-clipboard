@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+# Type your clipboard content after 2 sec of waiting.
+# Very useful to paste stuff over RDP where clipboard has been disabled.
+
+sleep 2; xclip -o -selection clipboard | {
+  IFS= read -r LINE;
+  xdotool type --delay 30ms --clearmodifiers -- "$LINE";
+  while IFS= read -r LINE; do
+    xdotool key --delay 30ms --clearmodifiers Return;
+    xdotool type --delay 30ms --clearmodifiers -- "$LINE";
+  done;
+}
