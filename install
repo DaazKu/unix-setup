@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import os
+import platform
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -7,11 +8,30 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 print("#########################")
 print("Install required packages")
 print("#########################")
-os.system('''
-    sudo apt-get install -y \
-        xclip \
-        xdotool
-''')
+
+if platform.system() == "Darwin":
+    os.system('''
+        brew install \
+            coreutils \
+            git \
+            gpg \
+            grep \
+            iterm2 \
+            jq \
+            tmux \
+            xdotool \
+            zsh
+    ''')
+    os.system('''
+        sh -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+    ''')
+else:
+    os.system('''
+        sudo apt-get install -y \
+            xclip \
+            gpg \
+            xdotool
+    ''')
 
 print("#########################")
 print("Setup $HOME && stuff")
@@ -38,14 +58,20 @@ for root, dirs, files in os.walk(HOME_SRC_DIR):
         file_src = root+"/"+file
         file_dst = os.path.expanduser("~"+(root.replace(HOME_SRC_DIR, ""))+"/"+file)
 
-        if not os.path.exists(file_dst):
-            print("Symlinking: "+file_src+" to "+file_dst)
-            os.symlink(file_src, file_dst)
+        if os.path.exists(file_dst):
+            os.unlink(file_dst)
+
+        print("Symlinking: "+file_src+" to "+file_dst)
+        os.symlink(file_src, file_dst)
 
 """
 Handle other stuff
 """
-os.system('sudo chown root:$(whoami) /opt')
+if platform.system() == "Darwin":
+    os.system('sudo chown root:staff /opt')
+else:
+    os.system('sudo chown root:$(whoami) /opt')
+
 os.system('sudo chmod 0775 /opt')
 
 symlinks = [

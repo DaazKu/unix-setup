@@ -96,6 +96,7 @@ fi
 # Open a new session and split into new panes for each SSH session
 for host in ${hosts}; do
     if ! tmux has-session -t "${tmux_session}" 2>/dev/null; then
+        echo ${host}
         tmux new-session -s "${tmux_session}" -d "${ssh_command} ${ssh_options} ${host}"
     elif [ -n "${tmux_attach_current_session}" ] && ! tmux list-windows -F "#W" | grep -q "${tmux_window}" >/dev/null; then
         tmux new-window ${tmux_window_options} "${ssh_command} ${ssh_options} ${host}"

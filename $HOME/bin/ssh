@@ -9,14 +9,19 @@ function cleanup() {
 }
 trap cleanup EXIT
 
+if [[ -f "/opt/homebrew/bin/ssh" ]]; then
+    SSH_COMMAND="/opt/homebrew/bin/ssh"
+else
+    SSH_COMMAND="/usr/bin/ssh"
+fi
 #
 # Allow to execute a script that sets some instructions to run before and after
 # executing ssh. Prime example would be to change tmux color for specific hosts.
 # See .ssh/config.d/tmux_color.sh for an example.
 #
-export SSH_WRAPPER_SSH_CONFIG=$(/usr/bin/ssh -G "$@")
+export SSH_WRAPPER_SSH_CONFIG=$(${SSH_COMMAND} -G "$@")
 
-# Return early bause ssh has been called incorrectly and usage is being shown
+# Return early because ssh has been called incorrectly and usage is being shown
 if [[ -z ${SSH_WRAPPER_SSH_CONFIG} ]]; then
   exit 1;
 fi
@@ -34,4 +39,4 @@ if [[ ! -z ${SSH_WRAPPER_PRE-} ]]; then
 fi
 
 # Make sure we're using a widely supported term remotely
-TERM=xterm /usr/bin/ssh "$@";
+TERM=xterm ${SSH_COMMAND} "$@";
