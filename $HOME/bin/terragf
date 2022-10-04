@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+if [[ -f "$PWD/terragrunt.hcl" ]]; then
+    terragrunt "$@"
+else
+    terraform "$@"
+fi
