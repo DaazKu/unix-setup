@@ -1,3 +1,22 @@
+# Mac OSX
+.DS_Store
+
+# Intelliji
 /.idea
+
+# Virtual env
 venv/
+
+# Test related stuff
 test.yml
+*.test
+
+# Other things I used sometimes
+/.trash
+*.trash
+
+# Terraform
+.terraform
+.terragrunt
+*.tfstate.backup
+tp.out
