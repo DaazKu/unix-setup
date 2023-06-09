@@ -9,9 +9,14 @@
     // On Mac, this value is overridden in the platform specific settings, so
     // you'll need to place this line in your user settings to override it.
     "close_windows_when_empty": true,
-    "color_scheme": "Packages/Color Scheme - Default/Monokai.sublime-color-scheme",
-    "theme": "Default.sublime-theme",
+    "color_scheme": "Monokai.sublime-color-scheme",
+    "theme": "Default Dark.sublime-theme",
     "dark_color_scheme": "Packages/Color Scheme - Default/Monokai.sublime-color-scheme",
+    "font_size": 20,
+    "mouse_wheel_switches_tabs": true,
+    "ignored_packages":
+    [
+		"Vintage",
+    ],
     "light_color_scheme": "Packages/Color Scheme - Default/Celeste.sublime-color-scheme",
-    "font_size": 10,
 }
