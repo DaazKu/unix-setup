@@ -13,19 +13,19 @@ if platform.system() == "Darwin":
     os.system('''
         brew install \
             coreutils \
+            diffutils \
             git \
             gpg \
+            gpg2 \
             grep \
             iterm2 \
             jq \
+            openssh \
+            pinentry-mac \
             reattach-to-user-namespace \
             tmux \
             xdotool \
             zsh
-    ''')
-    os.system('''
-        brew install --cask \
-            gpg-suite
     ''')
     os.system('''
         sh -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
@@ -93,3 +93,8 @@ print("#########################")
 
 if not os.path.exists(os.path.expanduser("~/.gitconfig_user")):
     print("Do not forget that you have to configure ~/.gitconfig_user")
+
+
+if platform.system() == "Darwin":
+    # GPG Passphrase CLI
+    print("Make sure to run 'echo \"pinentry-program $(brew --prefix)/bin/pinentry-mac\" | tee ~/.gnupg/gpg-agent.conf'")
