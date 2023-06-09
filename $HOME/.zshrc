@@ -1,10 +1,11 @@
-export PATH="$HOME/bin:$PATH"
 export ZSH="$HOME/.oh-my-zsh"
 export GPG_TTY=$(tty)
 
 export EDITOR="subl_new_window"
 
 ZSH_THEME="robbyrussell"
+# Disable bracketed-paste-magic which slows down large paste in terminal
+DISABLE_MAGIC_FUNCTIONS=true
 
 plugins=(git tmux)
 
@@ -70,14 +71,17 @@ do
     source $rc
 done
 
+export PATH="$HOME/bin:$PATH"
+
 autoload -U +X bashcompinit && bashcompinit
-complete -o nospace -C /usr/bin/terraform terraform
+complete -C `which terraform` terraform
+complete -C `which terraform` terragf
 
 # Fast SSH host completion (cache :D)
 # You can call `refresh_ssh_autocomplete` if you make any changes
 # https://stackoverflow.com/a/64147638
 function refresh_ssh_autocomplete() {
-    host_list=(`grep -R 'Host ' ~/.ssh/ | awk '{s= s $2 " "} END {print s}'`)
+    host_list=(`grep -R 'Host ' ~/.ssh/ 2>/dev/null | awk '{s= s $2 " "} END {print s}'`)
     zstyle ':completion:*:(ssh|scp|sftp):*' hosts $host_list
 }
 refresh_ssh_autocomplete
