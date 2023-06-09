@@ -1,4 +1,4 @@
-[include]
+[includeif]
     path = ~/.gitconfig_user
 [commit]
 	gpgsign = true
