@@ -56,8 +56,12 @@ compdef sshrc=ssh
 # Get rid of that annoying paste issue when I do CTRL+V before CTRL+SHIFT+V by mistake
 bindkey -r "^V"
 
+# Glob history search. Haaa yeah!!!
+bindkey '^R' history-incremental-pattern-search-backward
+
 # Bigger history
 HISTSIZE=100000
+setopt APPEND_HISTORY
 
 # Adds stuff locally and to sshrc.
 if [[ -f ~/.sharedrc ]]; then
