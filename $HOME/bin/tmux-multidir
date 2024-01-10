@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+directories=""
+
+usage() {
+    echo "Usage: $0 dir [dir ...]" >&2
+    echo "" >&2
+    echo "A good way to open all the subdirectories of the current dir: $0 \`find . -type d -depth 1\`" >&2
+    echo "" >&2
+    echo "Options:" >&2
+    echo "  -h                  Show help" >&2
+}
+
+while [ $# -ne 0 ]; do
+    case $1 in
+        -h)
+            usage
+            exit 0
+            ;;
+        -*)
+            usage
+            exit 2
+            ;;
+        *)
+            directories="${directories}${directories:+ }$1"; shift
+            ;;
+    esac
+done
+
+if [ -z "${directories}" ]; then
+    usage
+    exit 2
+fi
+
+# Find a name for a new session
+n=0; while tmux has-session -t "multidir-${n}" 2>/dev/null; do n=$(($n + 1)); done
+tmux_session="multidir-${n}"
+# Open a new session and split into new panes for each directory
+for directory in ${directories}; do
+    if ! tmux has-session -t "${tmux_session}" 2>/dev/null; then
+        tmux new-session -s "${tmux_session}" -d -c "${directory}"
+    else
+        tmux split-window -t "${tmux_session}" -d -c "${directory}"
+        # We have to reset the layout after each new pane otherwise the panes
+        # quickly become too small to spawn any more
+        tmux select-layout -t "${tmux_session}" tiled
+    fi
+done
+
+# Synchronize panes by default
+tmux set-window-option -t "${tmux_session}" synchronize-panes on
+
+if [ -n "${TMUX}" ]; then
+    # We are in a tmux, just switch to the new session
+    tmux switch-client -t "${tmux_session}"
+else
+    # We are NOT in a tmux, attach to the new session
+    tmux attach-session -t "${tmux_session}"
+fi

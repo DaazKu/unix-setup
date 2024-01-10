@@ -11,9 +11,10 @@ venv/
 test.yml
 *.test
 
-# Other things I used sometimes
+# Other things I use :)
 /.trash
 *.trash
+*.trash.*
 
 # Terraform
 .terraform

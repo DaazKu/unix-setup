@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+if [[ -f "/opt/homebrew/bin/git" ]]; then
+    GIT_COMMAND="/opt/homebrew/bin/git"
+else
+    GIT_COMMAND="/usr/bin/git"
+fi
+
+if [[ (("$1" == "checkout" && "$2" == "-b") || ("$1" == "switch" && "$2" == "-c")) && "$3" == *"/"* ]]; then
+    echo "Don't create branches with / noob"
+    exit 1
+fi
+
+${GIT_COMMAND} "$@";

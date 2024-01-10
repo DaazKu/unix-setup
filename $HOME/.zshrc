@@ -1,7 +1,7 @@
 export ZSH="$HOME/.oh-my-zsh"
 export GPG_TTY=$(tty)
 
-export EDITOR="subl_new_window"
+export EDITOR="subl-new-window"
 
 ZSH_THEME="robbyrussell"
 # Disable bracketed-paste-magic which slows down large paste in terminal

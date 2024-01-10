@@ -8,8 +8,11 @@ import tempfile
 """
 - Highlight EOL terminating with spaces for lines that differ
 - Some providers (looking at you `helm_release`) will shoot you massive EOT blocks with no clear highlights of what changed. This tool will replace that with a better diff section.
-- `helm_release` sometimes ouput massive changes on its "metadata" attribute and end with `] -> (known after apply)`. It's super useless and clutter the diff. We shorthen that shit out.
+- `helm_release` sometimes output massive changes on its "metadata" attribute and end with `] -> (known after apply)`. It's super useless and clutter the diff. We shorthen that shit out.
+- Remove
 """
+
+DEBUG = False
 
 parser = argparse.ArgumentParser(
     description="Better diff for some aspect of Terraform plans. Reads from STDIN.",
@@ -28,6 +31,12 @@ parser.add_argument(
     default="diff",
     help="path to the diff command. Relies on the shell's PATH by default.",
 )
+parser.add_argument(
+    "--disable-destroyed-resources-diff-suppression",
+    action="store_true",
+    default=False,
+    help="Disable diff suppression of destroyed resources",
+)
 args = parser.parse_args()
 config = vars(args)
 
@@ -38,17 +47,26 @@ helm_resource_indentation = ''
 helm_metadata_capturing = False
 helm_metadata_indentation = ''
 helm_metadata_buffer = []
+helm_eot_indentation = ''
+helm_eot_capturing = False
 
 eof_diff_buffer_1 = []
 eof_diff_buffer_2 = []
 eof_diff_capture_begin = ''
 eof_diff_capturing = False
-eof_diff_capture_target = "buffer_1"
+eof_diff_capture_target = 'buffer_1'
+
+destroyed_resource_capturing = False
+
+def print_debug(content: str) -> None:
+    global DEBUG
+    if DEBUG:
+        print(content)
 
 def rspace_highlighter(content: str) -> str:
     return re.sub("^( *)(\\u001B\\[3[12]m)?(-|\\+)(\\u001B\\[0m\\u001B\\[0m)?( .*?)( +)$", "\\1\\2\\3\\4\\5\\6$ <- RSpcEnd", content)
 
-def strip_cli_color(content: str) ->str:
+def strip_cli_color(content: str) -> str:
     return re.sub(
         '\x1b\\[\\d\\d?m',
         '',
@@ -64,6 +82,42 @@ def reset():
     eof_diff_capture_target = 'buffer_1'
 
 for line in sys.stdin:
+
+    ##############################
+    # Destroyed block(s) diff suppression
+    ##############################
+    if not config['disable_destroyed_resources_diff_suppression']:
+        if re.search("^  #.+(will be|must be)", strip_cli_color(line)):
+            if re.search("^  #.+will be destroyed$", strip_cli_color(line)):
+                # Handle case where we have destroyed resources back to back.
+                # We want a clean separation by an EOL
+                if destroyed_resource_capturing:
+                    print("    ... # Useless stuff hidden by terraform-better-diff")
+                    print("")
+                else:
+                    destroyed_resource_capturing = True
+            else:
+                if destroyed_resource_capturing:
+                    print("    ... # Useless stuff hidden by terraform-better-diff")
+                    print("")
+
+                destroyed_resource_capturing = False
+
+        if destroyed_resource_capturing:
+            if re.search("^Plan:", strip_cli_color(line)):
+                destroyed_resource_capturing = False
+                print("    ... # Useless stuff hidden by terraform-better-diff")
+                print("")
+                print(line, end='')
+
+            # Covers both the following and any other info
+            # `# resource.name["..."] will be destroyed`
+            # `# (because key ["..."] is not in for_each map)`
+            elif re.search("^  #", strip_cli_color(line)):
+                print(line, end='')
+
+            continue
+
     if eof_diff_capturing == False:
         if helm_metadata_capturing == False:
             # Detect that we're in a helm_release resource
@@ -91,6 +145,25 @@ for line in sys.stdin:
                     print(rspace_highlighter(line), end='')
                     continue
 
+                if helm_eot_capturing == False:
+                    # Detect if there's an <<-EOT...EOT, with no +/- in order to shrink it.
+                    matches = re.match("^( +)<<-EOT\n$", line)
+                    if matches:
+                        helm_eot_capturing = True
+                        helm_eot_indentation = strip_cli_color(matches[1])
+                        print_debug(f"helm_eot_indentation -> {len(helm_eot_indentation)}")
+                        print(rspace_highlighter(line), end='')
+                        continue
+                else:
+                    if re.search(f"^{helm_eot_indentation}EOT,\n$", line):
+                        helm_eot_capturing = False
+                        print(f"{helm_eot_indentation}  ... # Useless stuff hidden by terraform-better-diff")
+                        print(rspace_highlighter(line), end='')
+                        continue
+                    else:
+                        # Don't print the inside of that EOT
+                        continue
+
             if helm_metadata_capturing == True:
                 if re.search(f"^{helm_metadata_indentation}\\] -> \\(known after apply\\)", line):
                     print(f"{helm_metadata_indentation}  ... # Useless stuff hidden by terraform-better-diff")
@@ -109,22 +182,10 @@ for line in sys.stdin:
     ##############################
     # EOF DIFF related stuff
     ##############################
-    if eof_diff_capturing == False:
-        # Theres an EOT preceded with `-`. We start capturing the block #1
-        if re.search(".*-.*<<-?EOT\n", line):
-            eof_diff_capturing = True
-            eof_diff_capture_begin = line
-            continue
-
-        # Theres an EOT preceded with `+`. We start capturing the block #2
-        if re.search(".*\\+.*<<-?EOT\n", line):
-            eof_diff_capturing = True
-            eof_diff_capture_target = "buffer_2"
-            continue
-
     if eof_diff_capturing == True:
         # We reached an `EOT` not followed by an `,` which means that we're not having a diff of EOT blocks. Flush everyting and abort.
         if re.search("EOT\n", line):
+            print_debug("Flush everything because `EOT` detected")
             print(rspace_highlighter(eof_diff_capture_begin), end='')
             print(rspace_highlighter("".join(eof_diff_buffer_1)), end='')
             print(rspace_highlighter(line), end='')
@@ -133,40 +194,66 @@ for line in sys.stdin:
 
         # Found the end of a diff of EOT blocks. Stop capturing.
         if re.search("EOT,\n", line):
+            print_debug("Stop capturing because EOT, reached.")
             eof_diff_capturing = False
             continue
 
-    # We're not capturing and we have both blocks filled so we can do a diff!
-    if eof_diff_capturing == False and len(eof_diff_buffer_1) and len(eof_diff_buffer_2):
-        with tempfile.NamedTemporaryFile(mode='w+', encoding='utf-8') as buffer_1_file_handler:
-            buffer_1_file_handler.writelines(eof_diff_buffer_1)
-            buffer_1_file_handler.flush()
-            buffer_1_file_name = buffer_1_file_handler.name
+    if eof_diff_capturing == False:
+        # We're not capturing and we have both buffer filled so we can do a diff!
+        if len(eof_diff_buffer_1) and len(eof_diff_buffer_2):
+            with tempfile.NamedTemporaryFile(mode='w+', encoding='utf-8') as buffer_1_file_handler:
+                buffer_1_file_handler.writelines(eof_diff_buffer_1)
+                buffer_1_file_handler.flush()
+                buffer_1_file_name = buffer_1_file_handler.name
 
-            with tempfile.NamedTemporaryFile(mode='w+', encoding='utf-8') as buffer_2_file_handler:
-                result = buffer_2_file_handler.writelines(eof_diff_buffer_2)
-                buffer_2_file_handler.flush()
-                buffer_2_file_name = buffer_2_file_handler.name
+                with tempfile.NamedTemporaryFile(mode='w+', encoding='utf-8') as buffer_2_file_handler:
+                    result = buffer_2_file_handler.writelines(eof_diff_buffer_2)
+                    buffer_2_file_handler.flush()
+                    buffer_2_file_name = buffer_2_file_handler.name
 
-                diff_command = f"{config['diff_path']} --color={'always' if color_output else 'never'} -u {buffer_1_file_name} {buffer_2_file_name}"
+                    diff_command = f"{config['diff_path']} --color={'always' if color_output else 'never'} -u {buffer_1_file_name} {buffer_2_file_name}"
 
-                process = subprocess.run(
-                    diff_command,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.STDOUT,
-                    shell=True,
-                )
+                    process = subprocess.run(
+                        diff_command,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.STDOUT,
+                        shell=True,
+                    )
 
-                print(">>>>>> Generated by terraform-better-diff")
-                print(rspace_highlighter("\n".join(process.stdout.decode('utf-8').split("\n")[2:-1])))
-                print("<<<<<< terraform-better-diff END")
-                print(rspace_highlighter(line), end='')
+                    print(">>>>>> Generated by terraform-better-diff")
+                    print(rspace_highlighter("\n".join(process.stdout.decode('utf-8').split("\n")[2:-1])))
+                    print("<<<<<< terraform-better-diff END")
+                    print(rspace_highlighter(line), end='')
+            reset()
+            continue
 
-        reset()
-        continue
+        # Theres an EOT preceded with `-`. We start capturing the block #1
+        if re.search(".*-.*<<-?EOT\n", line):
+            print_debug("Caturing buffer 1")
+            eof_diff_capturing = True
+            eof_diff_capture_begin = line
+            continue
+
+        # Theres an EOT preceded with `+` and we have our buffer 1 filled. So we can do a diff!
+        if len(eof_diff_buffer_1) and re.search(".*\\+.*<<-?EOT\n", line):
+            print_debug("Caturing buffer 2")
+            eof_diff_capturing = True
+            eof_diff_capture_target = 'buffer_2'
+            continue
+
+        # So we're not capturing but there's stuff only in the first buffer.
+        # Flush it and reset.
+        if len(eof_diff_buffer_1):
+            print_debug("Flush buffer 1")
+            print(rspace_highlighter(eof_diff_capture_begin), end='')
+            print(rspace_highlighter("".join(eof_diff_buffer_1)), end='')
+            print(rspace_highlighter(line), end='')
+            reset()
+            continue
 
     # At this point we didn't flush and continue or anything so let's capture the line!
     if eof_diff_capturing == True:
+        print_debug(f"Buffers info: target={eof_diff_capture_target} len1:{len(eof_diff_buffer_1)} len2:{len(eof_diff_buffer_2)}")
         if eof_diff_capture_target == "buffer_1":
             eof_diff_buffer_1.append(line)
         else:
@@ -175,4 +262,3 @@ for line in sys.stdin:
 
     # Print the line.
     print(rspace_highlighter(line), end='')
-

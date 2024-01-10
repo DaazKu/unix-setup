@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+# https://blog.takanabe.tokyo/en/2020/04/remove-squash-merged-local-git-branches/
+
+echo "Deleting out-dated local merged branches"
+git branch --merged | grep -E -v "(^\*|master)" | xargs -I {} git branch -d {}
+
+echo "Deleting out-dated local squash-merged branches"
+git checkout -q master &&
+  git for-each-ref refs/heads/ "--format=%(refname:short)" |
+  while read branch; do
+    ancestor=$(git merge-base master $branch) &&
+      [[ $(git cherry master $(git commit-tree $(git rev-parse $branch^{tree}) -p $ancestor -m _)) == "-"* ]] &&
+      git branch -D $branch
+  done
