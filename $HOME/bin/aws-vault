@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+AWS_VAULT_BIN_LOCATION=`whereis -a aws-vault | cut -d' ' -f3`
+
+if ! command -v flock &> /dev/null
+then
+    echo "flock could not be found. Install it!"
+    exit 1
+fi
+
+if [[ "${AWS_VAULT_CLI_LOCK:-true}" == "false" ]]; then
+    ${AWS_VAULT_BIN_LOCATION} "$@"
+else
+    if [[ "${AWS_VAULT_CLI_CLEAR_LOCK:-false}" == "true" ]]; then
+        rm /tmp/aws-vault.lock
+    fi
+    (
+    # Try to acquire lock for 30 seconds
+    flock -w 2 100 || exit 3
+
+    ${AWS_VAULT_BIN_LOCATION} "$@"
+    ) 100>>/tmp/aws-vault.lock
+fi

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -uo pipefail
 
 # https://blog.takanabe.tokyo/en/2020/04/remove-squash-merged-local-git-branches/
 
@@ -13,3 +14,9 @@ git checkout -q master &&
       [[ $(git cherry master $(git commit-tree $(git rev-parse $branch^{tree}) -p $ancestor -m _)) == "-"* ]] &&
       git branch -D $branch
   done
+
+echo "Pruning old stuff"
+git fetch --prune --all
+
+echo "Running GC"
+git gc

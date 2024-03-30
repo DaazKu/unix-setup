@@ -38,5 +38,4 @@ if [[ ! -z ${SSH_WRAPPER_PRE-} ]]; then
     unset SSH_WRAPPER_PRE;
 fi
 
-# Make sure we're using a widely supported term remotely
-TERM=xterm ${SSH_COMMAND} "$@";
+${SSH_COMMAND} "$@";

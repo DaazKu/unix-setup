@@ -13,8 +13,11 @@ if platform.system() == "Darwin":
     os.system(
         """
         brew install \
+            aws-vault \
             coreutils \
+            curl \
             diffutils \
+            flock \
             git \
             gpg \
             gpg2 \
