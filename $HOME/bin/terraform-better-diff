@@ -304,15 +304,15 @@ for line in sys.stdin:
 
             continue
 
-        if re.search(f"^{eot_single_block_indentation}  \- .+", strip_cli_color(line)):
+        if re.search(f"^{eot_single_block_indentation}  - .+", strip_cli_color(line)):
             print_debug(f"Old line detected:       {line.replace("\n", '')}")
-            clean_line = re.sub(f"^{eot_single_block_indentation}  \-", f"{eot_single_block_indentation}   ", strip_cli_color(line))
+            clean_line = re.sub(f"^{eot_single_block_indentation}  -", f"{eot_single_block_indentation}   ", strip_cli_color(line))
             eot_single_block_old_lines.append(clean_line)
             continue
 
-        if re.search(f"^{eot_single_block_indentation}  \+ .+", strip_cli_color(line)):
+        if re.search(f"^{eot_single_block_indentation}  \\+ .+", strip_cli_color(line)):
             print_debug(f"New line detected:       {line.replace("\n", '')}")
-            clean_line = re.sub(f"^{eot_single_block_indentation}  \+", f"{eot_single_block_indentation}   ", strip_cli_color(line))
+            clean_line = re.sub(f"^{eot_single_block_indentation}  \\+", f"{eot_single_block_indentation}   ", strip_cli_color(line))
             eot_single_block_new_lines.append(clean_line)
             continue
 
