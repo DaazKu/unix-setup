@@ -1,6 +1,15 @@
 #!/usr/bin/env bash
+
+if [[ -f "$PWD/.terragf.pre-hook.sh" ]]; then
+    source "$PWD/.terragf.pre-hook.sh"
+fi
+
 if [[ -f "$PWD/terragrunt.hcl" ]]; then
     terragrunt "$@"
 else
     terraform "$@"
+fi
+
+if [[ -f "$PWD/.terragf.post-hook.sh" ]]; then
+    source "$PWD/.terragf.pre-hook.sh"
 fi
