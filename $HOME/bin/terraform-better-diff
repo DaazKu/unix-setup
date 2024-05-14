@@ -14,7 +14,7 @@ import tempfile
 
 parser = argparse.ArgumentParser(
     description="Better diff for some aspect of Terraform plans. Reads from STDIN.",
-    formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    formatter_class=argparse.ArgumentDefaultsHelpFormatter,
 )
 parser.add_argument(
     "--color",
@@ -44,92 +44,118 @@ parser.add_argument(
 args = parser.parse_args()
 config = vars(args)
 
-color_output = sys.stdout.isatty() if config['color'] == 'auto' else config['color']
+color_output = sys.stdout.isatty() if config["color"] == "auto" else config["color"]
+
+end_of_plan_reached = False
 
 helm_capturing = False
-helm_resource_indentation = ''
+helm_resource_indentation = ""
 helm_metadata_capturing = False
-helm_metadata_indentation = ''
+helm_metadata_indentation = ""
 helm_metadata_buffer = []
-helm_eot_indentation = ''
+helm_eot_indentation = ""
 helm_eot_capturing = False
 
 eot_diff_buffer_1 = []
 eot_diff_buffer_2 = []
-eot_diff_capture_begin = ''
+eot_diff_capture_begin = ""
 eot_diff_capturing = False
-eot_diff_capture_target = 'buffer_1'
+eot_diff_capture_target = "buffer_1"
 
 eot_single_block_capturing = False
-eot_single_block_indentation = ''
+eot_single_block_indentation = ""
 eot_single_block_old_lines = []
 eot_single_block_new_lines = []
 
 destroyed_resource_capturing = False
 
-DEBUG = config['debug']
+line_return = "\n"
+
+DEBUG = config["debug"]
+
+
 def print_debug(content: str) -> None:
     global DEBUG
     if DEBUG:
         print(f">>> terragf-debug: {content}")
 
-def rspace_highlighter(content: str) -> str:
-    return re.sub("^( *)(\\u001B\\[3[12]m)?(-|\\+)(\\u001B\\[0m\\u001B\\[0m)?( .*?)( +)$", "\\1\\2\\3\\4\\5\\6$ <- RSpcEnd", content)
 
-def strip_cli_color(content: str) -> str:
+def rspace_highlighter(content: str) -> str:
     return re.sub(
-        '\x1b\\[\\d\\d?m',
-        '',
-        content
+        "^( *)(\\u001B\\[3[12]m)?(-|\\+)(\\u001B\\[0m\\u001B\\[0m)?( .*?)( +)$",
+        "\\1\\2\\3\\4\\5\\6$ <- RSpcEnd",
+        content,
     )
 
+
+def strip_cli_color(content: str) -> str:
+    return re.sub("\x1b\\[\\d\\d?m", "", content)
+
+
 def reset_eot_diff():
-    global eot_diff_buffer_1,eot_diff_buffer_2,eot_diff_capture_begin,eot_diff_capturing,eot_diff_capture_target
+    global eot_diff_buffer_1, eot_diff_buffer_2, eot_diff_capture_begin, eot_diff_capturing, eot_diff_capture_target
     eot_diff_buffer_1 = []
     eot_diff_buffer_2 = []
     eot_diff_capturing = False
-    eot_diff_capture_begin = ''
-    eot_diff_capture_target = 'buffer_1'
+    eot_diff_capture_begin = ""
+    eot_diff_capture_target = "buffer_1"
 
 
 def reset_eot_single_block():
-    global eot_single_block_capturing,eot_single_block_indentation,eot_single_block_old_lines,eot_single_block_new_lines
+    global eot_single_block_capturing, eot_single_block_indentation, eot_single_block_old_lines, eot_single_block_new_lines
     eot_single_block_capturing = False
-    eot_single_block_indentation = ''
+    eot_single_block_indentation = ""
     eot_single_block_old_lines = []
     eot_single_block_new_lines = []
 
+
 def generate_diff_from_buffers(buffer_1: list, buffer_2: list):
     # We're not capturing and we have both buffer filled so we can do a diff!
-        with tempfile.NamedTemporaryFile(mode='w+', encoding='utf-8') as buffer_1_file_handler:
-            buffer_1_file_handler.writelines(buffer_1)
-            buffer_1_file_handler.flush()
-            buffer_1_file_name = buffer_1_file_handler.name
+    with tempfile.NamedTemporaryFile(
+        mode="w+", encoding="utf-8"
+    ) as buffer_1_file_handler:
+        buffer_1_file_handler.writelines(buffer_1)
+        buffer_1_file_handler.flush()
+        buffer_1_file_name = buffer_1_file_handler.name
 
-            with tempfile.NamedTemporaryFile(mode='w+', encoding='utf-8') as buffer_2_file_handler:
-                buffer_2_file_handler.writelines(buffer_2)
-                buffer_2_file_handler.flush()
-                buffer_2_file_name = buffer_2_file_handler.name
+        with tempfile.NamedTemporaryFile(
+            mode="w+", encoding="utf-8"
+        ) as buffer_2_file_handler:
+            buffer_2_file_handler.writelines(buffer_2)
+            buffer_2_file_handler.flush()
+            buffer_2_file_name = buffer_2_file_handler.name
 
-                diff_command = f"{config['diff_path']} --color={'always' if color_output else 'never'} -u {buffer_1_file_name} {buffer_2_file_name}"
+            diff_command = f"{config['diff_path']} --color={'always' if color_output else 'never'} -u {buffer_1_file_name} {buffer_2_file_name}"
 
-                process = subprocess.run(
-                    diff_command,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.STDOUT,
-                    shell=True,
+            process = subprocess.run(
+                diff_command,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                shell=True,
+            )
+
+            print(">>>>>> Generated by terraform-better-diff")
+            print(
+                rspace_highlighter(
+                    "\n".join(process.stdout.decode("utf-8").split("\n")[2:-1])
                 )
+            )
+            print("<<<<<< terraform-better-diff END")
 
-                print(">>>>>> Generated by terraform-better-diff")
-                print(rspace_highlighter("\n".join(process.stdout.decode('utf-8').split("\n")[2:-1])))
-                print("<<<<<< terraform-better-diff END")
 
 for line in sys.stdin:
+    if re.search("^Plan: .+ to destroy.", strip_cli_color(line)):
+        end_of_plan_reached = True
+
+    if end_of_plan_reached:
+        # Print the line.
+        print(rspace_highlighter(line), end="")
+        continue
 
     ##############################
     # Destroyed block(s) diff suppression
     ##############################
-    if not config['disable_destroyed_resources_diff_suppression']:
+    if not config["disable_destroyed_resources_diff_suppression"]:
         if re.search("^  #.+(will be|must be)", strip_cli_color(line)):
             if re.search("^  #.+will be destroyed$", strip_cli_color(line)):
                 # Handle case where we have destroyed resources back to back.
@@ -151,32 +177,34 @@ for line in sys.stdin:
                 destroyed_resource_capturing = False
                 print("    ... # Useless stuff hidden by terraform-better-diff")
                 print("")
-                print(line, end='')
+                print(line, end="")
 
             # Covers both the following and any other info
             # `# resource.name["..."] will be destroyed`
             # `# (because key ["..."] is not in for_each map)`
             elif re.search("^  #", strip_cli_color(line)):
-                print(line, end='')
+                print(line, end="")
 
             continue
 
     if eot_diff_capturing == False:
         if helm_metadata_capturing == False:
             # Detect that we're in a helm_release resource
-            matches = re.match("^(.+~.* )resource \"helm_release\"", line)
+            matches = re.match('^(.+~.* )resource "helm_release"', line)
             if matches:
                 helm_capturing = True
-                helm_resource_indentation = strip_cli_color(matches[1]).replace('~', ' ')
-                print(rspace_highlighter(line), end='')
+                helm_resource_indentation = strip_cli_color(matches[1]).replace(
+                    "~", " "
+                )
+                print(rspace_highlighter(line), end="")
                 continue
 
         if helm_capturing == True:
             # Check if we're at the ending of the helm resource.
             if re.search(f"^{helm_resource_indentation}\\}}\\n$", line):
                 helm_capturing = False
-                helm_resource_indentation = ''
-                print(rspace_highlighter(line), end='')
+                helm_resource_indentation = ""
+                print(rspace_highlighter(line), end="")
                 continue
 
             if helm_metadata_capturing == False:
@@ -184,8 +212,10 @@ for line in sys.stdin:
                 matches = re.match("^(.+~.* )metadata.+=.+\\[\\n$", line)
                 if matches:
                     helm_metadata_capturing = True
-                    helm_metadata_indentation = strip_cli_color(matches[1]).replace('~', ' ')
-                    print(rspace_highlighter(line), end='')
+                    helm_metadata_indentation = strip_cli_color(matches[1]).replace(
+                        "~", " "
+                    )
+                    print(rspace_highlighter(line), end="")
                     continue
 
                 if helm_eot_capturing == False:
@@ -194,25 +224,33 @@ for line in sys.stdin:
                     if matches:
                         helm_eot_capturing = True
                         helm_eot_indentation = strip_cli_color(matches[1])
-                        print_debug(f"helm_eot_indentation -> {len(helm_eot_indentation)}")
-                        print(rspace_highlighter(line), end='')
+                        print_debug(
+                            f"helm_eot_indentation -> {len(helm_eot_indentation)}"
+                        )
+                        print(rspace_highlighter(line), end="")
                         continue
                 else:
                     if re.search(f"^{helm_eot_indentation}EOT,\n$", line):
                         helm_eot_capturing = False
-                        print(f"{helm_eot_indentation}  ... # Useless stuff hidden by terraform-better-diff")
-                        print(rspace_highlighter(line), end='')
+                        print(
+                            f"{helm_eot_indentation}  ... # Useless stuff hidden by terraform-better-diff"
+                        )
+                        print(rspace_highlighter(line), end="")
                         continue
                     else:
                         # Don't print the inside of that EOT
                         continue
 
             if helm_metadata_capturing == True:
-                if re.search(f"^{helm_metadata_indentation}\\] -> \\(known after apply\\)", line):
-                    print(f"{helm_metadata_indentation}  ... # Useless stuff hidden by terraform-better-diff")
+                if re.search(
+                    f"^{helm_metadata_indentation}\\] -> \\(known after apply\\)", line
+                ):
+                    print(
+                        f"{helm_metadata_indentation}  ... # Useless stuff hidden by terraform-better-diff"
+                    )
                     helm_metadata_capturing = False
-                    helm_metadata_indentation = ''
-                    print(rspace_highlighter(line), end='')
+                    helm_metadata_indentation = ""
+                    print(rspace_highlighter(line), end="")
                     continue
                 else:
                     helm_metadata_buffer.append(line)
@@ -229,9 +267,9 @@ for line in sys.stdin:
         # We reached an `EOT` not followed by an `,` which means that we're not having a diff of EOT blocks. Flush everything and abort.
         if re.search("EOT\n", line):
             print_debug("Flush everything because `EOT` detected")
-            print(rspace_highlighter(eot_diff_capture_begin), end='')
-            print(rspace_highlighter("".join(eot_diff_buffer_1)), end='')
-            print(rspace_highlighter(line), end='')
+            print(rspace_highlighter(eot_diff_capture_begin), end="")
+            print(rspace_highlighter("".join(eot_diff_buffer_1)), end="")
+            print(rspace_highlighter(line), end="")
             reset_eot_diff()
             continue
 
@@ -246,7 +284,7 @@ for line in sys.stdin:
         if len(eot_diff_buffer_1) and len(eot_diff_buffer_2):
             generate_diff_from_buffers(eot_diff_buffer_1, eot_diff_buffer_2)
             reset_eot_diff()
-            print(rspace_highlighter(line), end='')
+            print(rspace_highlighter(line), end="")
             continue
 
         # Theres an EOT preceded with `-`. We start capturing the block #1
@@ -260,22 +298,24 @@ for line in sys.stdin:
         if len(eot_diff_buffer_1) and re.search(".*\\+.*<<-?EOT\n", line):
             print_debug("Capturing buffer 2")
             eot_diff_capturing = True
-            eot_diff_capture_target = 'buffer_2'
+            eot_diff_capture_target = "buffer_2"
             continue
 
         # So we're not capturing but there's stuff only in the first buffer.
         # Flush it and reset.
         if len(eot_diff_buffer_1):
             print_debug("Flush buffer 1")
-            print(rspace_highlighter(eot_diff_capture_begin), end='')
-            print(rspace_highlighter("".join(eot_diff_buffer_1)), end='')
-            print(rspace_highlighter(line), end='')
+            print(rspace_highlighter(eot_diff_capture_begin), end="")
+            print(rspace_highlighter("".join(eot_diff_buffer_1)), end="")
+            print(rspace_highlighter(line), end="")
             reset_eot_diff()
             continue
 
     # At this point we didn't flush and continue or anything so let's capture the line!
     if eot_diff_capturing == True:
-        print_debug(f"Buffers info: target={eot_diff_capture_target} len1:{len(eot_diff_buffer_1)} len2:{len(eot_diff_buffer_2)}")
+        print_debug(
+            f"Buffers info: target={eot_diff_capture_target} len1:{len(eot_diff_buffer_1)} len2:{len(eot_diff_buffer_2)}"
+        )
         if eot_diff_capture_target == "buffer_1":
             eot_diff_buffer_1.append(line)
         else:
@@ -289,38 +329,48 @@ for line in sys.stdin:
     matches = re.search("(.+~.* )<<-?EOT\n", strip_cli_color(line))
     if matches:
         print_debug("EOT Single block start")
-        eot_single_block_indentation = ' ' * len(matches[1])
+        eot_single_block_indentation = " " * len(matches[1])
         eot_single_block_capturing = True
-        print(rspace_highlighter(line), end='')
+        print(rspace_highlighter(line), end="")
         continue
 
     if eot_single_block_capturing == True:
-        if re.search("EOT,\n", line):
+        if re.search("EOT,?\n", line):
             print_debug("EOT Single block end")
 
-            generate_diff_from_buffers(eot_single_block_old_lines, eot_single_block_new_lines)
-            print(rspace_highlighter(line), end='')
+            generate_diff_from_buffers(
+                eot_single_block_old_lines, eot_single_block_new_lines
+            )
+            print(rspace_highlighter(line), end="")
             reset_eot_single_block()
 
             continue
 
         if re.search(f"^{eot_single_block_indentation}  - .+", strip_cli_color(line)):
-            print_debug(f"Old line detected:       {line.replace("\n", '')}")
-            clean_line = re.sub(f"^{eot_single_block_indentation}  -", f"{eot_single_block_indentation}   ", strip_cli_color(line))
+            print_debug(f"Old line detected:       {line.replace(line_return, '')}")
+            clean_line = re.sub(
+                f"^{eot_single_block_indentation}  -",
+                f"{eot_single_block_indentation}   ",
+                strip_cli_color(line),
+            )
             eot_single_block_old_lines.append(clean_line)
             continue
 
         if re.search(f"^{eot_single_block_indentation}  \\+ .+", strip_cli_color(line)):
-            print_debug(f"New line detected:       {line.replace("\n", '')}")
-            clean_line = re.sub(f"^{eot_single_block_indentation}  \\+", f"{eot_single_block_indentation}   ", strip_cli_color(line))
+            print_debug(f"New line detected:       {line.replace(line_return, '')}")
+            clean_line = re.sub(
+                f"^{eot_single_block_indentation}  \\+",
+                f"{eot_single_block_indentation}   ",
+                strip_cli_color(line),
+            )
             eot_single_block_new_lines.append(clean_line)
             continue
 
-        print_debug(f"Unchanged line detected: {line.replace("\n", '')}")
+        print_debug(f"Unchanged line detected: {line.replace(line_return, '')}")
         eot_single_block_old_lines.append(line)
         eot_single_block_new_lines.append(line)
 
         continue
 
     # Print the line.
-    print(rspace_highlighter(line), end='')
+    print(rspace_highlighter(line), end="")
