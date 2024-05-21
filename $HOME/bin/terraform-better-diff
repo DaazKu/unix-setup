@@ -144,7 +144,7 @@ def generate_diff_from_buffers(buffer_1: list, buffer_2: list):
 
 
 for line in sys.stdin:
-    if re.search("^Plan: .+ to destroy.", strip_cli_color(line)):
+    if re.search("^(Plan: .+ to destroy|Changes to Outputs)", strip_cli_color(line)):
         end_of_plan_reached = True
 
     if end_of_plan_reached:
