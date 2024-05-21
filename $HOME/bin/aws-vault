@@ -9,11 +9,14 @@ then
     exit 1
 fi
 
+# Use `AWS_VAULT_CLI_LOCK=false aws-vault ...` if you want to skip locking. This is useful in cases where you are already logged and a lot of concurrent requests are issued.
+# Good example would be something like this: `... | parallel -- AWS_VAULT_CLI_LOCK=false kubectl delete ...` where you want to delete many things at once.
 if [[ "${AWS_VAULT_CLI_LOCK:-true}" == "false" ]]; then
     ${AWS_VAULT_BIN_LOCATION} "$@"
 else
+    # If aws-vault hangs for some reason it might be because of a lock problem. Try using it like so: `AWS_VAULT_CLI_CLEAR_LOCK=true aws-vault ...` and it should fix the problemn.`
     if [[ "${AWS_VAULT_CLI_CLEAR_LOCK:-false}" == "true" ]]; then
-        rm /tmp/aws-vault.lock
+        rm -f /tmp/aws-vault.lock
     fi
     (
     # Try to acquire lock for 30 seconds
