@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-AWS_VAULT_BIN_LOCATION=`whereis -a aws-vault | cut -d' ' -f3`
+if [[ -f "/opt/homebrew/bin/ssh" ]]; then
+    AWS_VAULT_BIN_LOCATION="/opt/homebrew/bin/aws-vault"
+else
+    AWS_VAULT_BIN_LOCATION="/usr/bin/local/aws-vault"
+fi
 
 if ! command -v flock &> /dev/null
 then
