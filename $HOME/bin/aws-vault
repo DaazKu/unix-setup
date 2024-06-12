@@ -4,7 +4,7 @@ set -euo pipefail
 if [[ -f "/opt/homebrew/bin/ssh" ]]; then
     AWS_VAULT_BIN_LOCATION="/opt/homebrew/bin/aws-vault"
 else
-    AWS_VAULT_BIN_LOCATION="/usr/bin/local/aws-vault"
+    AWS_VAULT_BIN_LOCATION="/usr/local/bin/aws-vault"
 fi
 
 if ! command -v flock &> /dev/null

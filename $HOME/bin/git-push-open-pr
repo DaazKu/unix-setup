@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+NEWLINE=$'\n'
+
+INPUT="$(git push --set-upstream origin $(git branch --show-current) 2>&1)"
+PR_URL=$(grep -Po "https://.+/pull/new/[^ ]+" <<< "$INPUT")
+
+if [[ $PR_URL == *"github.com"* ]]; then
+    BRANCH_NAME=$(grep -Po "https://.+/pull/new/\K.+" <<< "$INPUT")
+
+    PR_BODY="**Already applied**"
+
+    if [[ $BRANCH_NAME == *"DEVOPS-"* ]]; then
+        DEVOPS_TICKET=$(grep -Po "DEVOPS-\d+" <<< "$BRANCH_NAME")
+        PR_BODY="${PR_BODY}${NEWLINE}${NEWLINE}Relates to $DEVOPS_TICKET"
+    fi
+
+    PR_BODY_URL_ENCODED=$(jq -rn --arg x "$PR_BODY" '$x|@uri')
+
+    GITHUB_OPEN_PR="${PR_URL/pull\/new/compare}?expand=1&body=$PR_BODY_URL_ENCODED"
+    open $GITHUB_OPEN_PR
+else
+    open $PR_URL
+fi

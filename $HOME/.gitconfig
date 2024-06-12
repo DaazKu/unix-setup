@@ -1,18 +1,16 @@
 [includeIf "gitdir:*"]
     path = ~/.gitconfig_user
 [commit]
-	gpgsign = true
+    gpgsign = true
 [alias]
-	logs = log --show-signature
-	# Pull current branch
-	pullc = !git pull origin $(git branch --show-current)
-	# Cleanup merged branches
-	cb = !git-clean-branches
-	# Push and set upstream to origin
-	pushsu = !git push --set-upstream origin $(git branch --show-current)
-    # Push, set upstream to origin and open PR (MacOSX only)
-    # Using `bash -c` because process substitution (the part with `>()` ) doesn't work in git alias. https://stackoverflow.com/a/31845170
-    # Using xargs because it can take the input from stdin and properly pass it to open which doesn't read from stdin!
-    pushsuo = !bash -c 'git push --set-upstream origin $(git branch --show-current) 2>&1 | tee >( grep -Po "https://.+/pull/new/.+" | xargs open )'
+    logs = log --show-signature
+    # Pull current branch
+    pullc = !git pull origin $(git branch --show-current)
+    # Cleanup merged branches
+    cb = !git-clean-branches
+    # Push and set upstream to origin
+    pushsu = !git push --set-upstream origin $(git branch --show-current)
+    # Push, set upstream to origin and open PR
+    pushsuo = !git-push-open-pr
 [core]
-	editor = subl-new-window
+    editor = subl-new-window

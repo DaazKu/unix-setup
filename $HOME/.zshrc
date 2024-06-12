@@ -81,6 +81,8 @@ autoload -U +X bashcompinit && bashcompinit
 complete -C `which terraform` terraform
 complete -C `which terraform` terragf
 
+export PATH="/opt/homebrew/opt/curl/bin:$PATH"
+
 # Fast SSH host completion (cache :D)
 # You can call `refresh_ssh_autocomplete` if you make any changes
 # https://stackoverflow.com/a/64147638
