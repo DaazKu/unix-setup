@@ -8,8 +8,7 @@ import tempfile
 """
 - Highlight EOL terminating with spaces for lines that differ
 - Some providers (looking at you `helm_release`) will shoot you massive EOT blocks with no clear highlights of what changed. This tool will replace that with a better diff section.
-- `helm_release` sometimes output massive changes on its "metadata" attribute and end with `] -> (known after apply)`. It's super useless and clutter the diff. We shorthen that shit out.
-- Remove
+- `helm_release` sometimes output massive changes on its "metadata" attribute and end with `] -> (known after apply)`. It's super useless and clutter the diff. We shorten that shit out.
 """
 
 parser = argparse.ArgumentParser(
@@ -326,10 +325,11 @@ for line in sys.stdin:
     # EOT single block related stuff
     ##############################
     # Theres an EOT preceded with `~`. So it's a single block that has a change(s).
-    matches = re.search("(.+~.* )<<-?EOT\n", strip_cli_color(line))
+    matches = re.search("(.+~ ).*<<-?EOT\n", strip_cli_color(line))
     if matches:
         print_debug("EOT Single block start")
         eot_single_block_indentation = " " * len(matches[1])
+        print_debug(f"Indentation length() == {len(eot_single_block_indentation)}")
         eot_single_block_capturing = True
         print(rspace_highlighter(line), end="")
         continue
@@ -346,7 +346,7 @@ for line in sys.stdin:
 
             continue
 
-        if re.search(f"^{eot_single_block_indentation}  - .+", strip_cli_color(line)):
+        if re.search(f"^{eot_single_block_indentation}  - .*", strip_cli_color(line)):
             print_debug(f"Old line detected:       {line.replace(line_return, '')}")
             clean_line = re.sub(
                 f"^{eot_single_block_indentation}  -",
@@ -356,7 +356,7 @@ for line in sys.stdin:
             eot_single_block_old_lines.append(clean_line)
             continue
 
-        if re.search(f"^{eot_single_block_indentation}  \\+ .+", strip_cli_color(line)):
+        if re.search(f"^{eot_single_block_indentation}  \\+ .*", strip_cli_color(line)):
             print_debug(f"New line detected:       {line.replace(line_return, '')}")
             clean_line = re.sub(
                 f"^{eot_single_block_indentation}  \\+",

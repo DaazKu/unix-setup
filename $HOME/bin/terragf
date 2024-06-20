@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
+set -Eeuo pipefail
 
 if [[ -f "$PWD/.terragf.pre-hook.sh" ]]; then
-    source "$PWD/.terragf.pre-hook.sh"
+    "$PWD/.terragf.pre-hook.sh" "$@"
 fi
 
 if [[ -f "$PWD/terragrunt.hcl" ]]; then
@@ -11,5 +12,5 @@ else
 fi
 
 if [[ -f "$PWD/.terragf.post-hook.sh" ]]; then
-    source "$PWD/.terragf.pre-hook.sh"
+    "$PWD/.terragf.post-hook.sh" "$@"
 fi
