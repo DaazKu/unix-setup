@@ -2,8 +2,10 @@
 set -Eeuo pipefail
 
 if [[ -f "$PWD/.terragf.pre-hook.sh" ]]; then
-    "$PWD/.terragf.pre-hook.sh" "$@"
+    source "$PWD/.terragf.pre-hook.sh" "$@"
 fi
+
+echo $VAULT_ADDR
 
 if [[ -f "$PWD/terragrunt.hcl" ]]; then
     terragrunt "$@"
@@ -12,5 +14,5 @@ else
 fi
 
 if [[ -f "$PWD/.terragf.post-hook.sh" ]]; then
-    "$PWD/.terragf.post-hook.sh" "$@"
+    source "$PWD/.terragf.post-hook.sh" "$@"
 fi
