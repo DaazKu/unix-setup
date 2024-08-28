@@ -5,10 +5,8 @@ if [[ -f "$PWD/.terragf.pre-hook.sh" ]]; then
     source "$PWD/.terragf.pre-hook.sh" "$@"
 fi
 
-echo $VAULT_ADDR
-
 if [[ -f "$PWD/terragrunt.hcl" ]]; then
-    terragrunt "$@"
+    TERRAGRUNT_FORWARD_TF_STDOUT=true TERRAGRUNT_LOG_LEVEL=error terragrunt "$@"
 else
     terraform "$@"
 fi
