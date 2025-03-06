@@ -19,5 +19,6 @@ test.yml
 # Terraform
 .terraform
 .terragrunt
+.terragrunt-cache
 *.tfstate.backup
 tp.out
