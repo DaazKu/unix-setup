@@ -7,48 +7,9 @@ ZSH_THEME="robbyrussell"
 # Disable bracketed-paste-magic which slows down large paste in terminal
 DISABLE_MAGIC_FUNCTIONS=true
 
-plugins=(git tmux)
+plugins=(git tmux tmux-cssh)
 
 source $ZSH/oh-my-zsh.sh
-
-# Modified version from ~/.oh-my-zsh/lib/termsupport.zsh which update window title in tmux
-# function title {
-#   emulate -L zsh
-#   setopt prompt_subst
-#
-#   [[ "$INSIDE_EMACS" == *term* ]] && return
-#
-#   # if $2 is unset use $1 as default
-#   # if it is set and empty, leave it as is
-#   : ${2=$1}
-#
-#   print $@
-#
-#   case "$TERM" in
-#     cygwin|tmux*|xterm*|putty*|rxvt*|konsole*|ansi|mlterm*|alacritty|st*)
-#       print -Pn "\e]2;${2:q}\a" # set window name
-#       print -Pn "\e]1;${1:q}\a" # set tab name
-#       ;;
-#     screen*)
-#       print -Pn "\ek${1:q}\e\\" # set screen hardstatus
-#       ;;
-#     *)
-#       if [[ "$TERM_PROGRAM" == "iTerm.app" ]]; then
-#         print -Pn "\e]2;${2:q}\a" # set window name
-#         print -Pn "\e]1;${1:q}\a" # set tab name
-#       else
-#         # Try to use terminfo to set the title
-#         # If the feature is available set title
-#         if [[ -n "$terminfo[fsl]" ]] && [[ -n "$terminfo[tsl]" ]]; then
-#           echoti tsl
-#           print -Pn "$1"
-#           echoti fsl
-#         fi
-#       fi
-#       ;;
-#   esac
-# }
-
 
 # Tell zsh that sshrc should have the same autocompletion than ssh.
 compdef sshrc=ssh
@@ -60,8 +21,10 @@ bindkey -r "^V"
 bindkey '^R' history-incremental-pattern-search-backward
 
 # Bigger history
-HISTSIZE=100000
+HISTSIZE=500000
 setopt APPEND_HISTORY
+setopt HIST_SAVE_NO_DUPS
+setopt HIST_IGNORE_ALL_DUPS
 
 # Adds stuff locally and to sshrc.
 if [[ -f ~/.sharedrc ]]; then
@@ -87,7 +50,10 @@ export PATH="/opt/homebrew/opt/curl/bin:$PATH"
 # You can call `refresh_ssh_autocomplete` if you make any changes
 # https://stackoverflow.com/a/64147638
 function refresh_ssh_autocomplete() {
-    host_list=(`grep -R 'Host ' ~/.ssh/ 2>/dev/null | awk '{s= s $2 " "} END {print s}'`)
-    zstyle ':completion:*:(ssh|scp|sftp):*' hosts $host_list
+    host_list=(`grep -R 'Host ' ~/.ssh/ 2>/dev/null | grep -Pio 'host \K.+' | tr -s '\n' ' '`)
+    zstyle ':completion:*:(ssh|scp|sftp|tmux-cssh):*' hosts $host_list
 }
 refresh_ssh_autocomplete
+
+alias git-root='cd $(git rev-parse --show-toplevel || echo ".")'
+export PATH="/opt/homebrew/opt/mysql-client@8.0/bin:$PATH"
