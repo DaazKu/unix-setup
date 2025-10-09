@@ -11,8 +11,8 @@ if [[ $PR_URL == *"github.com"* ]]; then
 
     PR_BODY="**Already applied**"
 
-    if [[ $BRANCH_NAME == *"DEVOPS-"* ]]; then
-        DEVOPS_TICKET=$(grep -Po "DEVOPS-\d+" <<< "$BRANCH_NAME")
+    if [[ $BRANCH_NAME == *"DEV-"* ]]; then
+        DEVOPS_TICKET=$(grep -Po "DEV-\d+" <<< "$BRANCH_NAME")
         PR_BODY="${PR_BODY}${NEWLINE}${NEWLINE}Relates to $DEVOPS_TICKET"
     fi
 
