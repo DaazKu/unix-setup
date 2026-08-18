@@ -6,7 +6,15 @@ if [[ -f "$PWD/.terragf.pre-hook.sh" ]]; then
 fi
 
 if [[ -f "$PWD/terragrunt.hcl" ]]; then
-    TERRAGRUNT_FORWARD_TF_STDOUT=true TERRAGRUNT_LOG_LEVEL=error terragrunt "$@"
+
+    # Trick Terragrunt by updating the timestamp of any symlinks in the current dir
+    # This forces the cache to pull the latest version of the target file.  
+    (
+      cd $(git rev-parse --show-toplevel || echo ".")
+      find . -name '*.tf' -type l -exec touch -h {} +
+    )
+
+    TG_TF_FORWARD_STDOUT=true TG_LOG_LEVEL=error terragrunt "$@"
 else
     terraform "$@"
 fi
